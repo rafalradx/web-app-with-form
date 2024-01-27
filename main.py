@@ -2,9 +2,21 @@ import mimetypes
 import pathlib
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
+import threading
+import socket
+
+UDP_IP = "localhost"
+UDP_PORT = 5000
+APP_IP = "localhost"
+APP_PORT = 3000
 
 
 class HttpHandler(BaseHTTPRequestHandler):
+    udp_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # def __init__(self, udp_client: socket, *args, **kwargs):
+    #     self.udp_client = udp_client
+    #     super().__init__(*args, **kwargs)
+
     def do_GET(self):
         pr_url = urllib.parse.urlparse(self.path)
         print(pr_url.path)
@@ -27,6 +39,8 @@ class HttpHandler(BaseHTTPRequestHandler):
             key: value for key, value in [el.split("=") for el in data_parse.split("&")]
         }
         print(data_dict)
+        HttpHandler.udp_client.send("Testing message".encode())
+        print(HttpHandler.udp_client.recv(1024).decode())
         self.send_response(302)
         self.send_header("Location", "/")
         self.end_headers()
@@ -50,18 +64,46 @@ class HttpHandler(BaseHTTPRequestHandler):
             self.wfile.write(file.read())
 
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 5000
-APP_PORT = 3000
+def connect_udp_client(host, port) -> socket:
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp_socket.bind((host, port))
+    udp_socket.connect()
+    return udp_socket
+
+
+def run_udp_server(ip, port):
+    udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp_server.bind((ip, port))
+    while True:
+        comm_socket, address = udp_server.accept()
+        message = comm_socket.recv(1024).decode()
+        print(message)
+        comm_socket.send("Message stored succesfully")
 
 
 def run():
-    server_address = ("", APP_PORT)
-    http_server = HTTPServer(server_address, HttpHandler)
-    try:
-        http_server.serve_forever()
-    except KeyboardInterrupt:
-        http_server.server_close()
+    # udp_server_thread = threading.Thread(target=run_udp_server, args=(UDP_IP, UDP_PORT))
+    # udp_server_thread.start()
+    # run_udp_server(UDP_IP, UDP_PORT)
+    udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp_server.bind((UDP_IP, UDP_PORT))
+    comm_socket, address = udp_server.accept()
+
+    # udp_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # http_handler = HttpHandler(udp_client=udp_client)
+    http_server_address = (APP_IP, APP_PORT)
+    http_server = HTTPServer(http_server_address, HttpHandler)
+    http_server_thread = threading.Thread(target=http_server.serve_forever())
+    http_server_thread.start()
+    http_server_thread.join()
+    # udp_server_thread.join()
+
+    # http_server_address = ("localhost", APP_PORT)
+    # http_server = HTTPServer(http_server_address, HttpHandler)
+    # try:
+    #     http_server.serve_forever()
+    # except KeyboardInterrupt:
+    #     http_server.server_close()
 
 
 if __name__ == "__main__":
