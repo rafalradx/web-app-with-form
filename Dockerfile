@@ -1,4 +1,3 @@
-# minimalny linux z pythonem
 FROM python:3.11 
 
 ENV APP_HOME /app
