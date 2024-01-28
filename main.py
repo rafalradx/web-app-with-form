@@ -40,13 +40,6 @@ class HttpHandler(BaseHTTPRequestHandler):
         pickled_dict_bytes = self.prepare_message(data_parsed)
         responce = self.send_message_udp(pickled_dict_bytes)
         print(responce)
-
-        # HttpHandler.udp_client.sendto(message, HttpHandler.udp_server_address)
-        # print(
-        #     f"CLIENT: Send data: '{message.decode()}' to UDP server: {HttpHandler.udp_server_address}"
-        # )
-        # response, address = HttpHandler.udp_client.recvfrom(1024)
-
         self.send_response(302)
         self.send_header("Location", "/")
         self.end_headers()
@@ -92,15 +85,27 @@ class HttpHandler(BaseHTTPRequestHandler):
 def run_udp_server(ip, port):
     udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_server.bind((ip, port))
-    while True:
-        message, address = udp_server.recvfrom(1024)
-        message_dict = pickle.loads(message)
-        print(f"SERVER: Message received from UDP client {address}")
-        try:
-            responce = store_message_into_json(message_dict, JSON_FILE)
-        except:
-            responce = "Saving message failed"
-        udp_server.sendto(responce.encode(), address)
+    try:
+        while True:
+            message, address = udp_server.recvfrom(1024)
+            message_dict = pickle.loads(message)
+            print(f"SERVER: Message received from UDP client {address}")
+            try:
+                responce = store_message_into_json(message_dict, JSON_FILE)
+            except:
+                responce = "Saving message failed"
+            udp_server.sendto(responce.encode(), address)
+    except KeyboardInterrupt:
+        print(f"Destroy server")
+        udp_server.close()
+
+
+def run_http_server(address, handler: HttpHandler):
+    http_server = HTTPServer(address, handler)
+    try:
+        http_server.serve_forever()
+    except KeyboardInterrupt:
+        http_server.server_close()
 
 
 def store_message_into_json(data_dict, file) -> str:
@@ -138,21 +143,15 @@ def store_message_into_json(data_dict, file) -> str:
 
 def run():
     udp_server_thread = threading.Thread(target=run_udp_server, args=(UDP_IP, UDP_PORT))
-    udp_server_thread.start()
-
-    http_server_address = (APP_IP, APP_PORT)
-    http_server = HTTPServer(http_server_address, HttpHandler)
-    http_server_thread = threading.Thread(target=http_server.serve_forever())
-    http_server_thread.start()
-    http_server_thread.join()
-    # udp_server_thread.join()
-
-    # http_server_address = ("localhost", APP_PORT)
-    # http_server = HTTPServer(http_server_address, HttpHandler)
-    # try:
-    #     http_server.serve_forever()
-    # except KeyboardInterrupt:
-    #     http_server.server_close()
+    http_server_thread = threading.Thread(
+        target=run_http_server, args=((APP_IP, APP_PORT), HttpHandler)
+    )
+    try:
+        udp_server_thread.start()
+        http_server_thread.start()
+    except KeyboardInterrupt:
+        http_server_thread.join()
+        udp_server_thread.join()
 
 
 if __name__ == "__main__":
