@@ -1,14 +1,20 @@
 import mimetypes
 import pathlib
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
 import threading
 import socket
+import pickle
+import os
+import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from time import time
+from datetime import datetime
 
 UDP_IP = "localhost"
 UDP_PORT = 5000
 APP_IP = "localhost"
 APP_PORT = 3000
+JSON_FILE = "./storage/data.json"
 
 
 class HttpHandler(BaseHTTPRequestHandler):
@@ -30,22 +36,17 @@ class HttpHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         data = self.rfile.read(int(self.headers["Content-Length"]))
-        print(data)
-        data_parse = urllib.parse.unquote_plus(data.decode())
-        print(data_parse)
-        data_dict = {
-            key: value for key, value in [el.split("=") for el in data_parse.split("&")]
-        }
-        print(data_dict)
-        message = "FLASH".encode()
-        HttpHandler.udp_client.sendto(message, HttpHandler.udp_server_address)
-        print(
-            f"CLIENT: Send data: '{message.decode()}' to UDP server: {HttpHandler.udp_server_address}"
-        )
-        response, address = HttpHandler.udp_client.recvfrom(1024)
-        print(
-            f"CLIENT: Response data: '{response.decode()}' from UDP server: {address}"
-        )
+        data_parsed = urllib.parse.unquote_plus(data.decode())
+        pickled_dict_bytes = self.prepare_message(data_parsed)
+        responce = self.send_message_udp(pickled_dict_bytes)
+        print(responce)
+
+        # HttpHandler.udp_client.sendto(message, HttpHandler.udp_server_address)
+        # print(
+        #     f"CLIENT: Send data: '{message.decode()}' to UDP server: {HttpHandler.udp_server_address}"
+        # )
+        # response, address = HttpHandler.udp_client.recvfrom(1024)
+
         self.send_response(302)
         self.send_header("Location", "/")
         self.end_headers()
@@ -68,12 +69,24 @@ class HttpHandler(BaseHTTPRequestHandler):
         with open(f".{self.path}", "rb") as file:
             self.wfile.write(file.read())
 
+    def prepare_message(self, data_parsed: str):
+        """formats data returned from POST (data_parsed)
+        into dict with timestamp as a key
+        return pickled bytes"""
+        data_dict = {
+            key: value
+            for key, value in [el.split("=") for el in data_parsed.split("&")]
+        }
+        current_time = datetime.now()
+        return_dict = {str(current_time): data_dict}
+        return pickle.dumps(return_dict)
 
-# def connect_udp_client(host, port) -> socket:
-#     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#     udp_socket.bind((host, port))
-#     udp_socket.connect()
-#     return udp_socket
+    def send_message_udp(self, message: bytes):
+        HttpHandler.udp_client.sendto(message, HttpHandler.udp_server_address)
+        response, address = HttpHandler.udp_client.recvfrom(1024)
+        return (
+            f"CLIENT: Response data: '{response.decode()}' from UDP server: {address}"
+        )
 
 
 def run_udp_server(ip, port):
@@ -81,25 +94,52 @@ def run_udp_server(ip, port):
     udp_server.bind((ip, port))
     while True:
         message, address = udp_server.recvfrom(1024)
-        print(
-            f"SERVER: Message received: '{message.decode()}' from UDP client {address}"
-        )
-        return_message = "THUNDER".encode()
-        udp_server.sendto(return_message, address)
-        print(
-            f"SERVER: Send responce: '{return_message.decode()}' to UDP client {address}"
-        )
+        message_dict = pickle.loads(message)
+        print(f"SERVER: Message received from UDP client {address}")
+        try:
+            responce = store_message_into_json(message_dict, JSON_FILE)
+        except:
+            responce = "Saving message failed"
+        udp_server.sendto(responce.encode(), address)
+
+
+def store_message_into_json(data_dict, file) -> str:
+    """Merges data_dict (dictionary) into JSON file with dictionary
+    if file does not exist creates it
+    if file exists but it's not in JSON format wipes it nad dumps data_dict
+    if file already contains a dict in JSON, loads, updates dict
+    and dumps it
+    Function is not efficient as it needs to load the whole file (possibly large) contents
+    every time when it stores new dict
+    there no simple way to append json file
+    returns a string with operation status"""
+    if os.path.isfile(file):
+        with open(file, "r+") as fh:
+            try:
+                json_loaded = json.load(fh)
+                json_loaded.update(data_dict)
+            except:
+                # the only working way to wipe the file out
+                # and dump dict in json
+                fh.truncate(0)
+                fh.seek(0, 0)
+                fh.write(json.dumps(data_dict))
+                return "Error reading JSON file, creating new"
+        # I dont know why but the file needs to be reopen in w mode #
+        # in order for json.dump to work properly
+        with open(file, "w") as fh:
+            json.dump(json_loaded, fh)
+            return "Message registered in file"
+    else:
+        with open(file, "w") as fh:
+            json.dump(data_dict, fh)
+            return "File created. Message registered in file"
 
 
 def run():
     udp_server_thread = threading.Thread(target=run_udp_server, args=(UDP_IP, UDP_PORT))
     udp_server_thread.start()
-    # run_udp_server(UDP_IP, UDP_PORT)
-    # udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # udp_server.bind((UDP_IP, UDP_PORT))
 
-    # udp_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # http_handler = HttpHandler(udp_client=udp_client)
     http_server_address = (APP_IP, APP_PORT)
     http_server = HTTPServer(http_server_address, HttpHandler)
     http_server_thread = threading.Thread(target=http_server.serve_forever())
