@@ -1,5 +1,5 @@
 # minimalny linux z pythonem
-FROM python:3.11-alpine 
+FROM python:3.11 
 
 ENV APP_HOME /app
 

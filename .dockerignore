@@ -1,5 +1,6 @@
 Pipfile
 requirements.txt
 ./storage/data.json
+./storage
 .git
 .gitignore
