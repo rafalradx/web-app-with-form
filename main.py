@@ -12,7 +12,7 @@ from datetime import datetime
 
 UDP_IP = "localhost"
 UDP_PORT = 5000
-APP_IP = "localhost"
+APP_IP = "0.0.0.0"
 APP_PORT = 3000
 JSON_FILE = "./storage/data.json"
 
