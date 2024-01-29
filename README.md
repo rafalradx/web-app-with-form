@@ -14,30 +14,34 @@
     mkdir storage
     ```
 - Run main.py with python:
-    ```
-    python main.py
-    ```
-    or
-    ```
-    python3 main.py
-    ```
-- In your favourite brownser enter:
-        ```localhost:3000```
+     ```
+     python main.py
+     ```
+     or
+     ```
+     python3 main.py
+     ```
+- In your favourite browser enter:
+     ```
+     localhost:3000
+     ```
 
 **Preferably run this app in docker container**
 
 **To run this application in docker**
-
-
-    ```
-    -  Navigate into repo directory and build a docker image:
-    ```
-    docker build . -t simple-web-app
-    ```
-    - Run docker container with port forwarding and bound volume for permanent storage:
-    ```
-    docker run -it -v $(pwd)/storage:/app/storage -p 3000:3000 -d simple-web-app
-    ```
-    This will assign your local port 3000 to container 3000 port, 
-    and mount your local 'storage' folder into /app/storage folder in container
-    The messages send by usera are stored in storage/data.json file
+   - Navigate into repo directory and build a docker image:
+     ```
+     docker build . -t simple-web-app
+     ```
+   - Run docker container with port forwarding and bound volume for permanent storage:
+     ```
+     docker run -it -v $(pwd)/storage:/app/storage -p 3000:3000 -d simple-web-app
+     ```
+   - In your favourite browser enter:
+     ```
+     localhost:3000
+     ```
+     This will assign your local port 3000 to container 3000 port, 
+     and mount your local 'storage' folder into /app/storage folder in container
+     The messages sent by users are stored in storage/data.json file
+     which is in synchronized between host and container
