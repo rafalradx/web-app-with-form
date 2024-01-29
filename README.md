@@ -1,11 +1,11 @@
-# Simple Web application that accepst messages from users and stores them in JSON file"
-
-**You can run this application by running directly main.py with python**
-
-
-**To run this application you need docker**
+**Simple Web application that accepst messages from users and stores them in JSON file**
 
 **How to run this application**
+**You can run this application directly by running main.py with python**
+
+**Preferably run this app in docker container**
+**To run this application in docker**
+
    - Clone this repository into a folder of choice on your local machine using the following command:
      ```
      git clone https://github.com/rafalradx/web-app-with-form
@@ -14,9 +14,10 @@
    ```
    docker build . -t simple-web-app
    ```
-   - Run docker container with port forwarding and bound volumes:
+   - Run docker container with port forwarding and bound volume for permanent storage:
    ```
    docker run -it -v $(pwd)/storage:/app/storage -p 3000:3000 -d simple-web-app
    ```
    This will assign your local port 3000 to container 3000 port, 
    and mount your local 'storage' folder into /app/storage folder in container
+   The messages send by usera are stored in storage/data.json file
