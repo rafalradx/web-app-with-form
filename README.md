@@ -5,32 +5,23 @@
 **You can run this application directly by running main.py with python**
 
 - Clone this repository into a folder of choice on your local machine using the following command:
-
-        ```
-        git clone https://github.com/rafalradx/web-app-with-form
-        ```
-
+    ```
+    git clone https://github.com/rafalradx/web-app-with-form
+    ```
 - Navigate into the repo folder and create storage direcotry:
-
-        ```
-        cd web-aap-with-form
-        mkdir storage
-        ```
-
+    ```
+    cd web-aap-with-form
+    mkdir storage
+    ```
 - Run main.py with python:
-
-        ```
-        python main.py
-        ```
-
+    ```
+    python main.py
+    ```
     or
-
-        ```
-        python3 main.py
-        ```
-
+    ```
+    python3 main.py
+    ```
 - In your favourite brownser enter:
-
         ```localhost:3000```
 
 **Preferably run this app in docker container**
