@@ -1,4 +1,4 @@
-**Simple Web application that accepts messages from users and stores them in JSON file**
+# Simple Web application that accepts messages from users and stores them in JSON file
 
 **How to run this application?**
 
@@ -8,9 +8,9 @@
     ```
     git clone https://github.com/rafalradx/web-app-with-form
     ```
-- Navigate into the repo folder and create storage direcotry:
+- Navigate into the repo folder and create storage directory:
     ```
-    cd web-aap-with-form
+    cd web-app-with-form
     mkdir storage
     ```
 - Run main.py with python:
@@ -26,7 +26,7 @@
      localhost:3000
      ```
 
-**Preferably run this app in docker container**
+# Preferably run this app in docker container
 
 **To run this application in docker**
    - Navigate into repo directory and build a docker image:
@@ -41,7 +41,7 @@
      ```
      localhost:3000
      ```
-     This will assign your local port 3000 to container 3000 port, 
-     and mount your local 'storage' folder into /app/storage folder in container
-     The messages sent by users are stored in storage/data.json file
-     which is in synchronized between host and container
+     This will assign your local port 3000 to container's 3000 port, 
+     and mount your local ``storage`` folder into ``/app/storage`` folder in container
+     The messages sent by users are stored in ``storage/data.json`` file
+     which is synchronized between host and container
